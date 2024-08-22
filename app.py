@@ -8,11 +8,16 @@ tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
 
 sector_model = TFBertForSequenceClassification.from_pretrained('bert-fine-tuned-sector')
 role_model = TFBertForSequenceClassification.from_pretrained('bert-fine-tuned-role')
+degree_model = TFBertForSequenceClassification.from_pretrained('bert-fine-tuned-degree')
+field_model = TFBertForSequenceClassification.from_pretrained('bert-fine-tuned-field')
 
 sector_labels = ['academia', 'board', 'civilsoc', 'internatOrg', 'judiciary', 'media', 'other', 'politics(centr)',
- 'politics(federalgov)', 'politics(gov)', 'politics(leg)', 'politics(local)', 'private', 'public', 'semiPrivate',
+ 'politics(gov)', 'politics(other)', 'politics(leg)', 'politics(local)', 'private', 'public', 'semiPrivate',
  'unknown']
 role_labels = ['CoS', 'adviser', 'media', 'minister', 'nonMC', 'other', 'secretary', 'viceCoS']
+degree_labels = ['PhD', 'bachelor(acad)', 'bachelor(prof)', 'highschool', 'master', 'other', 'unknown', 'nan']
+field_labels = ['artshum', 'busecon', 'law', 'lifesci', 'na', 'natural', 'socialScience', 'unknown', 'nan']
+
 
 def predict_sector(text):
     # Tokenize and prepare inputs for the model
@@ -40,9 +45,32 @@ def predict_role(text):
     response = [{"code-value": label, "probability": prob} for label, prob in zip(role_labels, probabilities)]
     return response
 
-@app.route('/')
-def hello_world():
-    return 'Hello Sammy!'
+def predict_degree(text):
+    # Tokenize and prepare inputs for the model
+    inputs = tokenizer(text, return_tensors='tf', truncation=True, padding=True, max_length=128)
+    # Get model outputs
+    outputs = degree_model(**inputs)
+    # Apply softmax to obtain probabilities
+    probabilities = tf.nn.softmax(outputs.logits, axis=-1)
+    probabilities = probabilities.numpy().tolist()[0]
+
+    # Build the formatted response with label names and probabilities
+    response = [{"code-value": label, "probability": prob} for label, prob in zip(degree_labels, probabilities)]
+    return response
+
+def predict_field(text):
+    # Tokenize and prepare inputs for the model
+    inputs = tokenizer(text, return_tensors='tf', truncation=True, padding=True, max_length=128)
+    # Get model outputs
+    outputs = field_model(**inputs)
+    # Apply softmax to obtain probabilities
+    probabilities = tf.nn.softmax(outputs.logits, axis=-1)
+    probabilities = probabilities.numpy().tolist()[0]
+
+    # Build the formatted response with label names and probabilities
+    response = [{"code-value": label, "probability": prob} for label, prob in zip(field_labels, probabilities)]
+    return response
+
 
 @app.route('/code-probabilities-positions', methods=['POST'])
 @cross_origin('*')
@@ -59,6 +87,28 @@ def predict_positions():
         if code_name == "duration":
             return(jsonify(
                 predict_role(text)
+            ), 200)
+
+        return jsonify("Invalid codeName"), 400
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/code-probabilities-educations', methods=['POST'])
+@cross_origin('*')
+def predict_educations():
+    try:
+        # Extract input text from the JSON payload
+        data = request.get_json()
+        code_name = request.args.get('codeName')
+        text = data['degree'] + ' in ' + data['field-of-study'] + " at " + data['institution']
+        if code_name == 'field':
+            return(jsonify(
+                predict_field(text)
+            ), 200)
+        if code_name == "degree":
+            return(jsonify(
+                predict_degree(text)
             ), 200)
 
         return jsonify("Invalid codeName"), 400
