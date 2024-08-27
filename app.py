@@ -77,7 +77,7 @@ def predict_field(text):
 def predict_positions():
     try:
         # Extract input text from the JSON payload
-        positions = request.args.get('positions')
+        positions = request.json()['positions']
         code_name = request.args.get('codeName')
         code_values_objs = []
         for data in positions:
@@ -98,7 +98,7 @@ def predict_positions():
 def predict_educations():
     try:
         # Extract input text from the JSON payload
-        educations = request.args.get('educations')
+        educations = request.json()['educations']
         code_name = request.args.get('codeName')
         code_values_objs = []
         for data in educations:
