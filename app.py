@@ -77,19 +77,18 @@ def predict_field(text):
 def predict_positions():
     try:
         # Extract input text from the JSON payload
-        data = request.get_json()
+        positions = request.args.get('positions')
         code_name = request.args.get('codeName')
-        text = data['title'] + ' at ' + data['workplace'] + ": " + data['description']
-        if code_name == 'sector':
-            return(jsonify(
-                predict_sector(text)
-            ), 200)
-        if code_name == "duration":
-            return(jsonify(
-                predict_role(text)
-            ), 200)
-
-        return jsonify("Invalid codeName"), 400
+        code_values_objs = []
+        for data in positions:
+            text = data['title'] + ' at ' + data['workplace'] + ": " + data['description']
+            if code_name == 'sector':
+                code_values_objs.append(predict_sector(text))
+            if code_name == "duration":
+                code_values_objs.append(predict_role(text))
+        return (jsonify(
+            predict_sector(text)
+        ), 200)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 400
@@ -99,19 +98,18 @@ def predict_positions():
 def predict_educations():
     try:
         # Extract input text from the JSON payload
-        data = request.get_json()
+        educations = request.args.get('educations')
         code_name = request.args.get('codeName')
-        text = data['degree'] + ' in ' + data['field-of-study'] + " at " + data['institution']
-        if code_name == 'field':
-            return(jsonify(
-                predict_field(text)
-            ), 200)
-        if code_name == "degree":
-            return(jsonify(
-                predict_degree(text)
-            ), 200)
-
-        return jsonify("Invalid codeName"), 400
+        code_values_objs = []
+        for data in educations:
+            text = data['degree'] + ' in ' + data['field-of-study'] + " at " + data['institution']
+            if code_name == 'field':
+                code_values_objs.append(predict_field(text))
+            if code_name == "degree":
+                code_values_objs.append(predict_degree(text))
+        return (jsonify(
+            code_values_objs
+        ), 200)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 400
